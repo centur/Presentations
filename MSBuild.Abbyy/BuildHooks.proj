@@ -1,0 +1,15 @@
+<Project ToolsVersion="4.0" DefaultTargets="AbyTarget" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Target Name="Hook_AfterClean_Target" AfterTargets="Clean" >
+		<Message Text="======Hook_AfterClean_Target=========================="/>
+		<Message Text="$(MSBuildThisFile)"/>
+		<Message Text="======Hook_AfterClean_Target=========================="/>
+	</Target>
+
+	<Target Name="Hook_BeforeBuild_Target" BeforeTargets="Build" >
+		<Message Text="======Hook_BeforeBuild_Target=========================="/>
+		<Message Text="$(MSBuildThisFile)"/>
+		<Message Text="======Hook_BeforeBuild_Target=========================="/>
+	</Target>
+
+</Project>

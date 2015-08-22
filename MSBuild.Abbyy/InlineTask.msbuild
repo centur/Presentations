@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+	
+	<!-- Инлайн таск для генерации AssemblyVersionString если она не передана-->
+	<UsingTask TaskName="AbbyyGenerateAssemblyVersion" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<AssemblyVersionString ParameterType="System.String" Output="true" />
+		</ParameterGroup>
+		<Task>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+				AssemblyVersionString = System.DateTime.UtcNow.ToString("yyyy.MM.dd.HHmm");
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	
+	<!-- Инлайн таск для генерации последовательности чисел Фиббоначи, 
+	количество чисел в последовательности задается параметром FibbonaciSeqLength-->
+	<UsingTask TaskName="AbbyySomeFibbonaci" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<FibbonaciSeqLength Required="True" ParameterType="System.Int32"/>
+			<Result ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="True"/>
+		</ParameterGroup>
+		<Task>
+			<Reference Include="Microsoft.Build"/>
+			<Reference Include="Microsoft.Build.Framework"/>
+			<Reference Include="Microsoft.Build.Utilities.v4.0"/>
+			<Using Namespace="Microsoft.Build.Evaluation"/>
+			<Using Namespace="Microsoft.Build.Execution"/>
+			<Using Namespace="Microsoft.Build.Utilities"/>
+			<Using Namespace="Microsoft.Build.Framework"/>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+
+					var fibboList = new List<ITaskItem>(FibbonaciSeqLength-1);
+					
+					double prev = -1;
+					double result = 1;
+					double sum;
+					int i;
+
+					for(i = 0;i <= FibbonaciSeqLength-1;++i)
+					{
+						sum = result + prev;
+						prev = result;
+						result = sum;
+
+						string itemIdentity = result.ToString();
+						var metadata = new Dictionary<string, string>{{"prevNumber",i!=0?prev.ToString():"no ;)"}};
+						
+						fibboList.Add(new TaskItem(itemIdentity, metadata));
+					}
+					Result = fibboList.ToArray();
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+
+
+</Project>

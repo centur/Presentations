@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+	<!-- Набор таргетов и тасков которые надо подключать после стандартного  <Import, чтобы можно было захукаться в процесс билда по Proj файлу 
+		Если это действительно необходимо :) -->
+
+	<!-- Инлайн таск для генерации AssemblyVersionString если она не передана-->
+	<UsingTask TaskName="AbbyyGenerateAssemblyVersion" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<AssemblyVersionString ParameterType="System.String" Output="true" />
+		</ParameterGroup>
+		<Task>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+				AssemblyVersionString = System.DateTime.UtcNow.ToString("yyyy.MM.dd.HHmm");
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<!-- Инлайн таск для генерации текста трансформации для RoleModel.xml-->
+	<UsingTask TaskName="GenerateRoleTransformation" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<!--<ProjectName ParameterType="System.String" Required="true"/>
+			<ProjectFolder ParameterType="System.String" Required="true"/>
+			<RoleTransformationText ParameterType="System.String" Output ="true"/>-->
+			<TransformData ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+			<RoleTransformation ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output ="true"/>
+		</ParameterGroup>
+		<Task>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+if (TransformData!= null && TransformData.Length > 0)
+{
+	RoleTransformation = new TaskItem[TransformData.Length];
+	for (int i = 0; i < TransformData.Length; i++)
+	{
+		ITaskItem item = TransformData[i];
+		string projectName = item.GetMetadata("TargetProject");
+		string projectFolder = item.GetMetadata("TargetFolder");
+		string outFile = item.GetMetadata("TargetTransformationFile");
+
+		string transformationText =String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
+<z:RoleModel 
+	xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" 
+	xmlns:xsd=""http://www.w3.org/2001/XMLSchema""
+	xmlns:xdt=""http://schemas.microsoft.com/XML-Document-Transform""
+	xmlns:z=""http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition""
+	xmlns=""http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition""
+	name=""{0}"" >
+	<z:Sites>
+		<z:Site name=""{0}"" xdt:Locator=""Match(name)"" physicalDirectory=""{1}"" xdt:Transform=""SetAttributes(physicalDirectory)"" />
+	</z:Sites>
+</z:RoleModel>", projectName, projectFolder);
+
+		var rtItem = new TaskItem(item.ItemSpec);
+		item.CopyMetadataTo(rtItem);
+		rtItem.SetMetadata("TransformationFile", outFile);
+		rtItem.SetMetadata("TransformationText", transformationText);
+				
+		RoleTransformation[i] = rtItem;
+	}
+}
+
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<!--Target, который позволяет подменить ServiceDefinition файл при сборке если такое указание передано через Property  $(ServiceDefinitionFile) с именем нового файла -->
+	<Target Name="After_BeforeResolveServiceModel" Condition="'$(ServiceDefinitionFile)' !=''"
+		AfterTargets="BeforeResolveServiceModel" BeforeTargets="CoreResolveServiceModel">
+
+		<Message Text="%0D%0A====After_BeforeResolveServiceModel Start"/>
+		<Message Text="%0D%0A========Current Service Definition : @(ServiceDefinition) =====%0D%0A"/>
+
+		<!--"Хитрый ход" который позволяет нам переопределить ServiceDefinition файлы, 
+		Чтобы он сработал - надо передать в виде property ServiceDefinitionFile имя файла-->
+		<ItemGroup>
+			<!--Удалим существующие ServiceDefinition, он может быть только 1 так что удалим все подряд-->
+			<ServiceDefinition Remove="*.*" />
+			<!--Добавим наш заданный ServiceDefinition-->
+			<ServiceDefinition Include="$(ServiceDefinitionFile)" />
+		</ItemGroup>
+		<Message Text="%0D%0A========Replaced Service Definition : @(ServiceDefinition) =====%0D%0A"/>
+	</Target>
+
+	<!--Target, который добавляет для копирования файл конфигурации через Property $(ReferencedServiceConfig) с именем файла который надо скопировать -->
+	<Target Name="AppendWorkerRoleCustomFiles" BeforeTargets="CopyWorkerRoleFiles">
+		<Message Text="%0D%0A====AppendWorkerRoleCustomFiles Start"/>
+		
+		<!--
+		<ItemGroup>
+		  CopyToOutputItems=d:\Projects\Abbyy.Conversion\trunk\Abbyy.Conversion.ConversionService\app.config -> app.config (TaskId:3129)
+		  <WorkerFiles Include="$(WorkerTargetDir)%(TargetPath)" Condition=" '@(CopyToOutputItems)' != '' ">
+			<TargetPath>%(TargetPath)</TargetPath>
+		  </WorkerFiles>
+		</ItemGroup
+
+		<Message Text="%0D%0A====CopyToOutputItems %(CopyToOutputItems.Identity)"/>
+		-->
+
+		<Message Text="%0D%0A====AppendWorkerRoleCustomFiles End"/>
+	</Target>
+
+	<!--Target, который вручную правильно копирует содержимое _bin_deployableAssemblies, без структуры, как это делается для _CopyLegacyWebApp -->
+	<Target Name="Manually_Copy_bin_deployableAssemblies" BeforeTargets="AfterBuild">
+		<Message Text="%0D%0A====Manually_Copy_bin_deployableAssemblies Start"/>
+
+		<ItemGroup>
+			<Manually_binDeployableAssembliesList Include="$(MSBuildProjectDirectory)\_bin_deployableAssemblies\**\*.*"
+				Condition="Exists('$(MSBuildProjectDirectory)\_bin_deployableAssemblies')" />
+		</ItemGroup>
+
+		<!--<Message Text="%0D%0A========OutDir: $(OutDir)"/>
+		<Message Text="%0D%0A========Manually_Copy_bin_deployableAssemblies files:"/>
+		<Message Text="%0D%0A============%(Manually_binDeployableAssembliesList.Identity)"/>-->
+		
+		<Copy SourceFiles="@(Manually_binDeployableAssembliesList)"
+			DestinationFolder="$(OutDir)\"
+			SkipUnchangedFiles="true" Retries="1" RetryDelayMilliseconds="5000"/>
+
+		<Message Text="%0D%0A====Manually_Copy_bin_deployableAssemblies End"/>
+
+	</Target>
+
+
+	<Target Name="AppendFilesToCopyLocal" BeforeTargets="_CopyFilesMarkedCopyLocal">
+	
+	</Target>
+
+</Project>

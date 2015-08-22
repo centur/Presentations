@@ -1,0 +1,35 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" 
+  ToolsVersion="4.0" DefaultTargets="PropertyBuild">
+  
+  <PropertyGroup>
+    <AbbyyProp Condition=" '$(AbbyyProp)'=='' ">Declared-Abbyy</AbbyyProp>
+  </PropertyGroup>
+
+  
+  <Target Name="PropertyBuild">
+    
+    <Message Text="PropertyBuild-1, AbbyyProp = $(AbbyyProp)" />
+
+    <PropertyGroup>
+      <AbbyyProp>FromTarget</AbbyyProp>
+    </PropertyGroup>
+
+    <Message Text="PropertyBuild-2, AbbyyProp = $(AbbyyProp)" />
+
+
+    <CallTarget Targets="Internal" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Internal" />
+    
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Internal" Properties="Foo=Bar" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Internal" Properties="AbbyyProp=MSBuild Task Value" />
+  </Target>
+
+
+  <Target Name="Internal">
+    <Message Text="IsFooBar" Condition="$(Foo)=='Bar'"/>
+    <Message Text="Internal Target, AbbyyProp = $(AbbyyProp)" />
+  </Target>
+    
+</Project>

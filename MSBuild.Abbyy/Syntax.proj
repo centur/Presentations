@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="MyTarget" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<Property1>Value_Of_Property1</Property1>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ItemOne Include="First">
+			<Meta1>First.Meta</Meta1>
+		</ItemOne>
+		<ItemOne Include="Second">
+			<Meta1>Second.Meta</Meta1>
+		</ItemOne>
+	</ItemGroup>
+
+	<Target Name="MyTarget">
+
+		<Message Text="
+=====Properties" />
+		<Message Text="Property1 Value is : $(Property1)" />
+
+		<Message Text="
+=====Items as List" />
+		<Message Text="Value: @(ItemOne, ' ')" />
+
+		<Message Text="
+=====Items PerItem with Meta " />
+		<Message Text="%(ItemOne.Identity) with Meta: %(ItemOne.Meta1)" />
+
+
+	</Target>
+	
+</Project>

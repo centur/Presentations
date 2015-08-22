@@ -1,0 +1,93 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"
+	ToolsVersion="4.0" DefaultTargets="MainTarget" InitialTargets="SetupBuild;PreProcessing"
+	>
+	<PropertyGroup>
+		<RebuildNumber></RebuildNumber> <!-- Вписать значение для того чтобы показать разницу работы Condition на Target и на CallTarget c глобальными и локальными свойствами-->
+		<NoSilence>0</NoSilence> <!-- Меньше шума-->
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<Numbers Include="First" />
+		<Numbers Include="Second" />
+		<Numbers Include="Third" />
+	</ItemGroup>
+
+	
+	<Target Name="SetupBuild">
+		<Message Text="SetupBuild" Condition="$(NoSilence) !=''" />
+	</Target>
+
+	<Target Name="PreProcessing">
+		<Message Text="PreProcessing" Condition="$(NoSilence) !=''"/>
+	</Target>
+
+
+	<PropertyGroup>
+		<MainTargetDependsOn>
+			ExternalDependsTarget;
+			InternalDependsTarget;
+		</MainTargetDependsOn>
+	</PropertyGroup>
+	
+
+	<Target Name="MainTarget" DependsOnTargets="$(MainTargetDependsOn)">
+		<Message Text="MainTarget"/>
+
+
+		<PropertyGroup>
+			<RebuildNumber></RebuildNumber>
+		</PropertyGroup>
+		<CallTarget Targets="ConditionFailedTarget" Condition="$(RebuildNumber) == ''"/>
+
+	
+		<CallTarget Targets="SubTarget" />
+
+		<Message Text="================ Message :) ================"/>
+		<CallTarget Targets="InitSomeData" />
+
+	</Target>
+
+	<Target Name="ConditionFailedTarget" Condition="$(RebuildNumber) != ''">
+		<Message Text="ConditionFailedTarget Will Never Run if RebuildNumber!=''"/>
+		<Message Text="RebuildNumber: $(RebuildNumber)"/>
+	</Target>
+
+	<Target Name="SubTarget">
+		<Message Text="SubTarget"/>
+
+		<Message Text="Enumerating Numbers: @(Numbers->'%(Identity)')"/>
+
+<!--
+		<Error Text="Error imitated" ContinueOnError="false" />
+		<OnError ExecuteTargets="CleanUpOnError"/>
+-->
+	</Target>
+
+
+	<Target Name="ExternalDependsTarget">
+		<Message Text="External DependsOn Target" Condition="$(NoSilence) !=''" />
+	</Target>
+	<Target Name="InternalDependsTarget">
+		<Message Text="InternalDependsTarget" Condition="$(NoSilence) !=''" />
+	</Target>
+
+	<Target Name="CleanUpOnError">
+		<Message Text="CleanUpOnError Target" />
+	</Target>
+
+
+
+
+	<Target Name="BeforeInitSomeData" BeforeTargets="InitSomeData">
+		<Message Text="BeforeInitSomeData"/>
+	</Target>
+
+	<Target Name="InitSomeData">
+		<Message Text="InitSomeData"/>
+	</Target>
+
+	<Target Name="AfterInitData" AfterTargets="InitSomeData">
+		<Message Text="AfterInitData"/>
+	</Target>
+	
+</Project>

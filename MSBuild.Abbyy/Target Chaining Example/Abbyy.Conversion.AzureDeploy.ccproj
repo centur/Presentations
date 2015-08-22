@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>1.6</ProductVersion>
+    <ProjectGuid>{c0967f75-a5a7-4fc3-abf8-79e56922f736}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Abbyy.Conversion.AzureDeploy</RootNamespace>
+    <AssemblyName>Abbyy.Conversion.AzureDeploy</AssemblyName>
+    <StartDevelopmentStorage>True</StartDevelopmentStorage>
+    <Name>Abbyy.Conversion.AzureDeploy</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <!-- Items for the project -->
+  <ItemGroup>
+    <ServiceConfiguration Include="ServiceConfiguration.cscfg" />
+    <ServiceDefinition Include="ServiceDefinition.csdef" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EnvironmentConfiguration Include="ServiceConfiguration.Transformation.Production.cscfg" />
+    <EnvironmentConfiguration Include="ServiceConfiguration.Transformation.Test.cscfg" />
+    <EnvironmentConfiguration Include="ServiceConfiguration.Transformation.AzureTest.cscfg" />
+
+    <EnvironmentDefinition Include="ServiceDefinition.Transformation.Production.csdef" />
+    <EnvironmentDefinition Include="ServiceDefinition.Transformation.Test.csdef" />
+    <EnvironmentDefinition Include="ServiceDefinition.Transformation.AzureTest.csdef" />
+    
+    <None Include="@(EnvironmentDefinition)" />
+    <None Include="@(EnvironmentConfiguration)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Abbyy.Conversion.ProcessingPack\Abbyy.Conversion.ProcessingPack.csproj">
+      <Name>Abbyy.Conversion.ProcessingPack</Name>
+      <Project>{993fb2fd-9c6c-4532-a3be-076cb901da96}</Project>
+      <Private>True</Private>
+      <RoleType>Worker</RoleType>
+      <RoleName>Abbyy.Conversion.ProcessingPack</RoleName>
+    </ProjectReference>
+    <ProjectReference Include="..\Abbyy.Conversion.WebUI\Abbyy.Conversion.WebUI.csproj">
+      <Name>Abbyy.Conversion.WebUI</Name>
+      <Project>{7e90a464-2129-489a-b550-518b6aa69401}</Project>
+      <Private>True</Private>
+      <RoleType>Web</RoleType>
+      <RoleName>Abbyy.Conversion.WebUI</RoleName>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Profiles" />
+  </ItemGroup>
+  <ItemGroup>
+    <PublishProfile Include="Profiles\FROL API Staging.azurePubxml" />
+    <PublishProfile Include="Profiles\FROL API Production.azurePubxml" />
+  </ItemGroup>
+  <!-- Import the target files for this project template -->
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <CloudExtensionsDir Condition=" '$(CloudExtensionsDir)' == '' ">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Windows Azure Tools\1.6\</CloudExtensionsDir>
+  </PropertyGroup>
+  <Import Project="$(CloudExtensionsDir)Microsoft.WindowsAzure.targets" />
+  <Import Project="..\AbbyyConversionBuild.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Local' ">
+    <OutputPath>bin\Local\</OutputPath>
+  </PropertyGroup>
+</Project>

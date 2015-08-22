@@ -1,0 +1,808 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Make" ToolsVersion="4.0">
+	<Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\Web\Microsoft.Web.Publishing.targets" />
+	<Import Project="$(MSBuildExtensionsPath)\Abbyy.MSBuildServices\Abbyy.MSBuildServices.Targets" />
+	<Import Project="AbbyyConversionBuild.targets" />
+
+	<!-- Init -->
+	<PropertyGroup>
+		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+		<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+		
+		<!-- По умолчанию берем настройки trunk-->
+		<AbbyyBuildSetings>trunk</AbbyyBuildSetings>
+		<!-- release-on-test-->
+		<!--Режим отладки скрипта на сервере-->
+		<IsServerDebug>false</IsServerDebug>
+		<!--Для отладки на машине разработчика-->
+		<IsLocalDebug>false</IsLocalDebug>
+		<AbbyyBaseOutput Condition="$(IsLocalDebug)" >d:\.Work\.Msbuild</AbbyyBaseOutput>
+		<AbbyySourceFilesPath Condition="$(IsLocalDebug)">d:\Projects\Abbyy.Conversion\trunk</AbbyySourceFilesPath>
+		<MSBuild Condition="$(IsLocalDebug)">C:\Windows\Microsoft.NET\Framework\v4.0.30319\</MSBuild>
+
+	</PropertyGroup>
+
+	<!-- Переключатели для работы таргетов trunk-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'trunk'">
+
+		<!--Общий переключатель для сборки под Azure-->
+		<IsBuildForAzure>true</IsBuildForAzure>
+		<!-- Генерировать ли Pack для Azure-->
+		<IsGenerateAzurePack>true</IsGenerateAzurePack>
+
+		
+		<!-- Флаги для стандартной сборки Websites\services-->
+		<IsStandardBuild>true</IsStandardBuild>
+		<!-- Разворачивать ли сайты\сервисы на тестовый сервер -->
+		<IsPublishStandardEnabled>true</IsPublishStandardEnabled>
+
+		<!-- Деплоить ли БД-->
+		<IsDeployDatabase>true</IsDeployDatabase>
+		<!--Запускать ли тесты -->
+		<IsRunTests>true</IsRunTests>
+
+	</PropertyGroup>
+	
+	<!-- Текстовые значения пропертей trunk-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'trunk'">
+		<!-- В какой конфигурации билдим проект-->
+		<AbbyyBuildConfiguration>Debug</AbbyyBuildConfiguration>
+		<!-- Какой таргет профиль для конфигов -->
+		<AbbyyTargetProfile>Test</AbbyyTargetProfile>
+
+		<!-- Проект для сборки ажура-->
+		<AzurePackageProjectName>Abbyy.Conversion.AzureDeploy</AzurePackageProjectName>
+		<TestProjectName>Abbyy.Conversion.Test</TestProjectName>
+
+		<!-- на какой сервер деплоим-->
+		<DeployServerName>OnlineOcrTest</DeployServerName>
+
+		<DeployAzureServiceName>AbbyyAzureConversion</DeployAzureServiceName>
+		<DeploySchedulerInvokerServiceName>AbbyyTaskScheduler</DeploySchedulerInvokerServiceName>
+		
+		<!-- Деплой базы-->
+		<DeployDatabaseProjectName>Abbyy.Conversion.AzureDatabase</DeployDatabaseProjectName>
+		<DeployDatabaseName>Azure_FROL_trunk</DeployDatabaseName>
+
+		<Semicolon>%3B</Semicolon>
+
+	</PropertyGroup>
+
+	<!-- General - trunk-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'trunk'">
+		<!-- General -->
+		<!--Куда тимсити забрал наши сорцы-->
+		<AbbyySourceFilesPath Condition="'$(AbbyySourceFilesPath)' == ''">$(teamcity_build_workingDir)</AbbyySourceFilesPath>
+
+		<!-- Версия для суффикса эмулятора-->
+		<BuildVersion Condition="'$(BUILD_NUMBER)'!=''">$(BUILD_NUMBER)</BuildVersion>
+		<BuildVersion Condition="'$(BuildVersion)'==''">$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</BuildVersion>
+
+		<!--Результаты для Output-->
+		<AbbyyBaseOutput Condition="'$(AbbyyBaseOutput)' == ''">$(AbbyySourceFilesPath)\_AllResults</AbbyyBaseOutput>
+		<AbbyyBuildOutputPath>$(AbbyyBaseOutput)\BuildResults</AbbyyBuildOutputPath>
+
+
+		<!-- Standard Build -->
+		<StandardBuildPublishPath>$(AbbyyBaseOutput)\StandardPublished</StandardBuildPublishPath>
+
+
+		<!-- Azure -->
+		<AzurePackageProjectFolder>$(AbbyySourceFilesPath)\$(AzurePackageProjectName)\</AzurePackageProjectFolder>
+		<AzurePackageProjectFileName>$(AzurePackageProjectFolder)$(AzurePackageProjectName).ccproj</AzurePackageProjectFileName>
+
+		<!-- Куда публикуем Азурные результаты-->
+		<AzurePublishFolderName>$(AbbyyBaseOutput)\AzurePublished</AzurePublishFolderName>
+
+		<AzureCloudPackFolder>$(AzurePublishFolderName)\PackageCloud</AzureCloudPackFolder>
+		<AzureCloudFilesFolderName>EmulatorFolder.Cloud-$(BuildVersion)</AzureCloudFilesFolderName>
+		<AzureCloudFilesFolderFullPath>$(AzurePublishFolderName)\$(AzureCloudFilesFolderName)</AzureCloudFilesFolderFullPath>
+
+		<AzureEmulatorPackFolder>$(AzurePublishFolderName)\PackageEmulator\</AzureEmulatorPackFolder>
+		<AzureEmulatorFilesFolderName>EmulatorFolder.Local-$(BuildVersion)</AzureEmulatorFilesFolderName>
+		<AzureEmulatorFilesFolderFullPath>$(AzurePublishFolderName)\$(AzureEmulatorFilesFolderName)\</AzureEmulatorFilesFolderFullPath>
+
+		<AzureEmulatorStopFileName>$(AzurePublishFolderName)\StopEmulator.Command.txt</AzureEmulatorStopFileName>
+		<AzureEmulatorLaunchFileName>$(AzurePublishFolderName)\StartEmulator.Command.txt</AzureEmulatorLaunchFileName>
+		<DeployAzureEmulatorLocalFolder>C:\ABBYY.Online\Azure.Packages\</DeployAzureEmulatorLocalFolder>
+
+
+		<!-- Деплой сервер -->
+		<DeployServer>\\$(DeployServerName)</DeployServer>
+
+		<!-- Деплой стандартного вебсайта\сервиса\PDF файлов -->
+		<DeployRootPath>$(DeployServer)\Abbyy.Online\Azure.Conversion</DeployRootPath>
+		<DeploySymbolsPath>$(DeployRootPath)\PdbSymbols</DeploySymbolsPath>
+
+		<!-- Деплой базы-->
+		<DeployDatabaseServer>$(DeployServerName)\SqlExpress</DeployDatabaseServer>
+		<DeployDatabaseProfile>Deploy.$(AbbyyTargetProfile).publish.xml</DeployDatabaseProfile>
+
+	</PropertyGroup>
+	
+	
+	<!-- Переключатели для работы таргетов release-on-test-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'release-on-test'">
+
+		<!--Общий переключатель для сборки под Azure-->
+		<IsBuildForAzure>true</IsBuildForAzure>
+		<!-- Генерировать ли Pack для Azure-->
+		<IsGenerateAzurePack>true</IsGenerateAzurePack>
+
+		<!-- Флаги для стандартной сборки Websites\services-->
+		<IsStandardBuild>true</IsStandardBuild>
+		<!-- Разворачивать ли сайты\сервисы на тестовый сервер -->
+		<IsPublishStandardEnabled>true</IsPublishStandardEnabled>
+
+		<!-- Деплоить ли БД-->
+		<IsDeployDatabase>true</IsDeployDatabase>
+		<!--Запускать ли тесты -->
+		<IsRunTests>true</IsRunTests>
+
+	</PropertyGroup>
+	
+	<!-- Текстовые значения пропертей release-on-test-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'release-on-test'">
+		<!-- В какой конфигурации билдим проект-->
+		<AbbyyBuildConfiguration>Debug</AbbyyBuildConfiguration>
+		<!-- Какой таргет профиль для конфигов -->
+		<AbbyyTargetProfile>Release</AbbyyTargetProfile>
+
+		<!-- Проект для сборки ажура-->
+		<AzurePackageProjectName>Abbyy.Conversion.AzureDeploy</AzurePackageProjectName>
+		<TestProjectName>Abbyy.Conversion.Test</TestProjectName>
+
+		<!-- на какой сервер деплоим-->
+		<DeployServerName>OnlineOcrTest</DeployServerName>
+
+		<DeployAzureServiceName>AbbyyAzureConversionRelease</DeployAzureServiceName>
+		<DeploySchedulerInvokerServiceName>AbbyyTaskSchedulerRelease</DeploySchedulerInvokerServiceName>
+		
+		<!-- Деплой базы-->
+		<DeployDatabaseProjectName>Abbyy.Conversion.AzureDatabase</DeployDatabaseProjectName>
+		<DeployDatabaseName>Azure_FROL_Release</DeployDatabaseName>
+
+		<Semicolon>%3B</Semicolon>
+
+	</PropertyGroup>
+
+	<!-- General - trunk-->
+	<PropertyGroup Condition="'$(AbbyyBuildSetings)' == 'release-on-test'">
+		<!-- General -->
+		<!--Куда тимсити забрал наши сорцы-->
+		<AbbyySourceFilesPath Condition="'$(AbbyySourceFilesPath)' == ''">$(teamcity_build_workingDir)</AbbyySourceFilesPath>
+
+		<!-- Версия для суффикса эмулятора-->
+		<BuildVersion Condition="'$(BUILD_NUMBER)'!=''">$(BUILD_NUMBER)</BuildVersion>
+		<BuildVersion Condition="'$(BuildVersion)'==''">$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</BuildVersion>
+
+		<!--Результаты для Output-->
+		<AbbyyBaseOutput Condition="'$(AbbyyBaseOutput)' == ''">$(AbbyySourceFilesPath)\_AllResults</AbbyyBaseOutput>
+		<AbbyyBuildOutputPath>$(AbbyyBaseOutput)\BuildResults</AbbyyBuildOutputPath>
+
+
+		<!-- Standard Build -->
+		<StandardBuildPublishPath>$(AbbyyBaseOutput)\StandardPublished</StandardBuildPublishPath>
+
+
+		<!-- Azure -->
+		<AzurePackageProjectFolder>$(AbbyySourceFilesPath)\$(AzurePackageProjectName)\</AzurePackageProjectFolder>
+		<AzurePackageProjectFileName>$(AzurePackageProjectFolder)$(AzurePackageProjectName).ccproj</AzurePackageProjectFileName>
+
+		<!-- Куда публикуем Азурные результаты-->
+		<AzurePublishFolderName>$(AbbyyBaseOutput)\AzurePublished</AzurePublishFolderName>
+
+		<AzureCloudPackFolder>$(AzurePublishFolderName)\PackageCloud</AzureCloudPackFolder>
+		<AzureCloudFilesFolderName>EmulatorFolder.Cloud-$(BuildVersion)</AzureCloudFilesFolderName>
+		<AzureCloudFilesFolderFullPath>$(AzurePublishFolderName)\$(AzureCloudFilesFolderName)</AzureCloudFilesFolderFullPath>
+
+		<AzureEmulatorPackFolder>$(AzurePublishFolderName)\PackageEmulator\</AzureEmulatorPackFolder>
+		<AzureEmulatorFilesFolderName>EmulatorFolder.Local-$(BuildVersion)</AzureEmulatorFilesFolderName>
+		<AzureEmulatorFilesFolderFullPath>$(AzurePublishFolderName)\$(AzureEmulatorFilesFolderName)\</AzureEmulatorFilesFolderFullPath>
+
+		<!-- Деплой сервер -->
+		<DeployServer>\\$(DeployServerName)</DeployServer>
+
+		<!-- Деплой стандартного вебсайта\сервиса\PDF файлов -->
+		<DeployRootPath>$(DeployServer)\Abbyy.Online\Release.Conversion</DeployRootPath>
+		<DeploySymbolsPath>$(DeployRootPath)\PdbSymbols</DeploySymbolsPath>
+
+		<!-- Деплой базы-->
+		<DeployDatabaseServer>$(DeployServerName)\SqlExpress</DeployDatabaseServer>
+		<DeployDatabaseProfile>Deploy.$(AbbyyTargetProfile).publish.xml</DeployDatabaseProfile>
+
+	</PropertyGroup>
+	
+
+	<ItemGroup>
+		<!-- наборы для таргета TransformConfigFiles. Convention over Configuration-->
+		<ConfigTransformationInclude Include="$(AbbyySourceFilesPath)\**\*.cscfg" Exclude="$(AbbyySourceFilesPath)\**\*.Transformation.*" >
+			<IsShouldBeTransformed>true</IsShouldBeTransformed>
+		</ConfigTransformationInclude>
+		<ConfigTransformationInclude Include="$(AbbyySourceFilesPath)\**\*.csdef" Exclude="$(AbbyySourceFilesPath)\**\*.Transformation.*" >
+			<IsShouldBeTransformed>true</IsShouldBeTransformed>
+		</ConfigTransformationInclude>
+		
+		<!-- Что исключить из трансформаций -->
+		<ConfigTransformationExclude Include="$(AbbyySourceFilesPath)\**\packages.config" />
+
+		<!--Web проекты для стандартного билда-->
+		<WebPublishProject Include="Abbyy.Conversion.WebApi" />
+		<WebPublishProject Include="Abbyy.Conversion.WebUI" />
+		<WebPublishProject Include="Abbyy.Conversion.Facebook" />
+		<WebPublishProject Include="Abbyy.Conversion.WidgetUi" />
+
+		<!--Сервисы и консольные приложения для стандартного билда-->
+		<WorkerProject Include="Abbyy.Conversion.ConversionService" />
+		<!--<WorkerProject Include="Abbyy.Scheduler.ConversionHistory" />
+		<WorkerProject Include="Abbyy.Scheduler.ConversionInvitations" />
+		<WorkerProject Include="Abbyy.Scheduler.ConversionMail" />
+		<WorkerProject Include="Abbyy.Scheduler.ConversionOrders" />
+		<WorkerProject Include="Abbyy.Scheduler.Export" />-->
+		<WorkerProject Include="Abbyy.Scheduler.TaskInvoker" />
+		<WorkerProject Include="Abbyy.Conversion.AutoScale" />
+	</ItemGroup>
+
+
+	<Target Name="Make">
+		<!-- Вызываются все Target-ы необходимые для сборки в соответствующем порядке.-->
+
+		<Message Text="%0D%0A==== Make ====" />
+
+		<!-- Препроцессинг - дописывает информацию о версии, трансформируются файлы и т.д -->
+		<CallTarget Targets="PreBuildProcessing" />
+
+		<!--Стандартный билд-->
+		<CallTarget Targets="PerformStandardBuild" Condition="$(IsStandardBuild)"/>
+		<!-- Azure билд и деплой пака -->
+		<CallTarget Targets="PerformAzureBuild" Condition="$(IsBuildForAzure)"/>
+
+		<!-- Препроцессинг - дописывает информацию о версии, трансформируются файлы и т.д -->
+		<CallTarget Targets="PostBuildProcessing" />
+
+
+	</Target>
+
+	<!-- Pre Build Processing-->
+	<Target Name="PreBuildProcessing" DependsOnTargets="AddVersionInfo;TransformConfigFiles" >
+	</Target>
+
+	<Target Name="AddVersionInfo" Condition="!$(IsServerDebug)">
+		<Message Text="%0D%0A==== AddVersionInfo" />
+		<!-- 1. Добавление информации о версии сборки в AssemblyInfo.cs
+			Для этого находятся все AssemblyInfo.cs в проекте и в конец этих файлов дописывается соответствующая информация.
+			
+			WARNING!: Необходимо из всех AssemblyInfo.cs удалить атрибуты AssemblyVersion и AssemblyFile, которые студия генерит автоматически,
+			В противном случае билд не пройдет из-за ошибки компиляции-->
+
+		<AbbyyGenerateAssemblyVersion Condition="'$(BuildVersion)' ==''">
+			<Output TaskParameter="AssemblyVersionString" PropertyName="BuildVersion"  />
+		</AbbyyGenerateAssemblyVersion>
+
+
+		<PropertyGroup>
+			<AssemblyVersionLines>
+				%0D%0A[assembly: AssemblyVersion("$(BuildVersion)")]
+				%0D%0A[assembly: AssemblyFileVersion("$(BuildVersion)")]
+			</AssemblyVersionLines>
+		</PropertyGroup>
+
+		<Message Text="%0D%0A==== Write Version Info: [$(BuildVersion)]%0D%0A" />
+
+		<ItemGroup>
+			<AssemblyInfoFile Include="$(AbbyySourceFilesPath)\**\AssemblyInfo.cs" />
+		</ItemGroup>
+
+		<WriteLinesToFile File="%(AssemblyInfoFile.FullPath)" Lines="$(AssemblyVersionLines)" Overwrite="False" />
+
+	</Target>
+
+	<Target Name="TransformConfigFiles">
+		<!-- 
+		TransformConfigFiles:
+		Трансформировать все файлы config для которых есть трансформация.
+		В данном случае используется подход Convention over Configuration:
+		
+			Во всем проекте ищутся файлы *.config, если рядом с ним есть файлы с таким же именем но с кусочком Transformation
+			например Web.Transformation.Test.Config Web.Transformation.Production.Config.
+			Все трансформации  применяются на конфиг, а результаты копируются рядом с config файлом. 
+			
+			Файл $(AbbyyTargetProfile).config считается трансформацией для данного конфига, 
+			например Web.Test.Config и дополнительно копируется ПОВЕРХ web.config!
+
+		Помимо этого есть возможность задать 2 группы
+		ConfigTransformationInclude - конфиги, которые не имеют расширения config но тоже должны быть трансформированы
+		ConfigTransformationExclude - конфиги которые надо выкинуть из трансформации
+		-->
+		<Message Text="%0D%0A==== TransformConfigFiles" />
+
+		<Message Text="%0D%0A==== Dump:" />
+		<Message Text="AbbyySourceFilesPath: $(AbbyySourceFilesPath)" />
+		<Message Text="ConfigTransformationInclude: @(ConfigTransformationInclude)" />
+		<Message Text="ConfigTransformationExclude: @(ConfigTransformationExclude)" />
+		<Message Text="" />
+
+		<ItemGroup>
+			<!-- Все конфиги за исключением трансформаций-->
+			<AllConfigs Include="$(AbbyySourceFilesPath)\**\*.config" Exclude="$(AbbyySourceFilesPath)\**\*.Transformation.*" />
+			<AllConfigs Include="@(ConfigTransformationInclude)" >
+				<IsShouldBeTransformed Condition="'%(ConfigTransformationInclude.IsShouldBeTransformed)' == 'true'" >true</IsShouldBeTransformed>
+			</AllConfigs>
+
+			<AllConfigs Remove="@(ConfigTransformationExclude)" />
+
+
+			<!-- Все трансформации для каждого конфига-->
+			<CfgTrans Include="$(AbbyySourceFilesPath)\%(AllConfigs.RecursiveDir)*.Transformation.*%(AllConfigs.Extension)" >
+				<SourceCfg>%(AllConfigs.FullPath)</SourceCfg>
+				<IsShouldBeTransformed Condition="'%(AllConfigs.IsShouldBeTransformed)' == 'true'" >true</IsShouldBeTransformed>
+			</CfgTrans>
+
+			<!-- соберем набор с обширными метаданными для удобства дальнейших операций-->
+			<ConfigTransformations Include="@(CfgTrans)">
+				<TransformedName>$([System.String]::Copy('%(CfgTrans.Filename)').Replace('Transformation', 'Result'))%(CfgTrans.Extension)</TransformedName>
+				<TransformedDir>%(CfgTrans.RootDir)%(CfgTrans.Directory)_transformed.Configs</TransformedDir>
+				<TransformedFullPath>%(ConfigTransformations.TransformedDir)\%(ConfigTransformations.TransformedName)</TransformedFullPath>
+
+				<!-- Пометим те результаты, чье имя содержит $(AbbyyTargetProfile), как то, что нужно положить вместо основного конфига-->
+				<ShouldCopyBack Condition="$([System.String]::new('%(CfgTrans.Filename)').Contains(`$(AbbyyTargetProfile)`)) or '%(CfgTrans.IsShouldBeTransformed)' == 'true'" >true</ShouldCopyBack>
+			</ConfigTransformations>
+		</ItemGroup>
+
+		<!--<Message Text="%0D%0A==== |%(ConfigTransformations.FullPath)|====|%(ConfigTransformations.SourceCfg)|====|%(ConfigTransformations.Identity)|====|%(ConfigTransformations.TransformedFullPath)|====" />-->
+
+		<!-- Передвинем все исходные файлы в .original чтобы они не лочились при трансформации и последующем копировании-->
+		<Move
+			Condition="'%(ConfigTransformations.ShouldCopyBack)' != ''"
+			SourceFiles="%(ConfigTransformations.SourceCfg)"
+			DestinationFiles="%(ConfigTransformations.SourceCfg).original"
+			OverwriteReadOnlyFiles="true"/>
+
+
+		<!-- создадим каталог, если его еще не было-->
+		<MakeDir ContinueOnError="true" Directories="%(ConfigTransformations.TransformedDir)" />
+		<!-- вычистим оттуда все, если он уже был-->
+		<Delete Files="%(ConfigTransformations.TransformedDir)\*.*" />
+
+		<!--Осуществим трансформацию над передвинутыми файлами .original, сложив результаты в созданный каталог-->
+		<ParameterizeTransformXml Condition="'%(ConfigTransformations.Identity)' != '' And Exists('%(ConfigTransformations.SourceCfg).original')"
+			Source="%(ConfigTransformations.SourceCfg).original"
+			Transform="%(ConfigTransformations.Identity)"
+			Destination="%(ConfigTransformations.TransformedFullPath)"
+			/>
+
+		<!--Скопируем то, для чего есть ShouldCopyBack на место исходного файла который подвергали трансформации т.е. например на место web.config -->
+		<Copy
+			Condition="'%(ConfigTransformations.ShouldCopyBack)' != '' And Exists(%(ConfigTransformations.TransformedFullPath))"
+			SourceFiles="%(ConfigTransformations.TransformedFullPath)"
+			DestinationFiles="%(ConfigTransformations.SourceCfg)"
+			OverwriteReadOnlyFiles="true"/>
+
+		<!--Скопируем обратно все результаты, но выкинув Transformation из имени - т.е. у нас появится Web.Production.config,Web.Test.config, Web.Local.config etc-->
+		<Copy
+			SourceFiles="%(ConfigTransformations.TransformedFullPath)"
+			DestinationFiles="$([System.String]::Copy('%(ConfigTransformations.FullPath)').Replace('.Transformation', ''))"
+			OverwriteReadOnlyFiles="true"/>
+
+	</Target>
+
+
+	<!-- Standard Build-->
+
+	<Target Name="PerformStandardBuild" DependsOnTargets="BuildServices;BuildWebSites" />
+
+	<Target Name="PrepareServices">
+
+		<ItemGroup>
+			<WorkerProject Condition="Exists('$(AbbyySourceFilesPath)\%(WorkerProject.Identity)/%(WorkerProject.Identity).csproj')">
+				<ProjectName>$(AbbyySourceFilesPath)/%(WorkerProject.Identity)/%(WorkerProject.Identity).csproj</ProjectName>
+				<PublishSubFolder>%(WorkerProject.Identity)</PublishSubFolder>
+			</WorkerProject>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="BuildServices" DependsOnTargets="PrepareServices">
+		<Message Text="%0D%0A==== BuildServices" />
+
+		<Message Text="=== %0D%0A Identity:%(WorkerProject.Identity) %0D%0A Name:%(WorkerProject.ProjectName) %0D%0A PubFolder:  %(WorkerProject.PublishSubFolder) %0D%0A ===" 
+			Condition="$(IsLocalDebug)" />
+		
+		<MSBuild Projects="%(WorkerProject.ProjectName)" Targets="Clean;ResolveReferences;Build;"
+			Properties="
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			DebugSymbols=true;
+			OutDir=$(StandardBuildPublishPath)\%(WorkerProject.PublishSubFolder)\;
+			OutputPath= $(AbbyyBuildOutputPath)\;
+			CustomAfterMicrosoftCommonTargets=$(MSBuildProjectDirectory)\AbbyyConversionBuild.targets;
+			" />
+		
+	</Target>
+	
+	<Target Name="PrepareWebSites">
+		<ItemGroup>
+			<WebPublishProject Condition="Exists('$(AbbyySourceFilesPath)\%(WebPublishProject.Identity)\%(WebPublishProject.Identity).csproj')">
+				<ProjectName>$(AbbyySourceFilesPath)\%(WebPublishProject.Identity)\%(WebPublishProject.Identity).csproj</ProjectName>
+				<PublishSubFolder>%(WebPublishProject.Identity)</PublishSubFolder>
+			</WebPublishProject>
+
+			<WebPublishProject Remove="@(WebPublishProject)" Condition="'%(WebPublishProject.ProjectName)' == ''"/>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="BuildWebSites" DependsOnTargets="PrepareWebSites">
+		<Message Text="%0D%0A==== BuildWebSites" />
+
+		<Message Text="===%0D%0A Identity:%(WebPublishProject.Identity) %0D%0A Name:%(WebPublishProject.ProjectName) %0D%0A PubFolder: %(WebPublishProject.PublishSubFolder) %0D%0A ===" 
+			Condition="$(IsLocalDebug)" />
+		
+		<MSBuild Projects="%(WebPublishProject.ProjectName)" Targets="Clean;ResolveReferences;Build;_CopyWebApplication;Publish"
+			Properties="
+			MvcBuildViews=true;
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			DebugSymbols=true;
+			WebProjectOutputDir=$(StandardBuildPublishPath)\%(WebPublishProject.PublishSubFolder)\;
+			OutDir=$(StandardBuildPublishPath)\%(WebPublishProject.PublishSubFolder)\bin\;
+			OutputPath= $(AbbyyBuildOutputPath)\;
+			" />
+	
+	</Target>
+
+
+	<!-- Azure Build-->
+
+	<Target Name="PerformAzureBuild">
+		<!-- Сборка для Azure-->
+		<Message Text="%0D%0A==== PerformAzureBuild" />
+
+		<!-- NOTE: На данный момент наблюдается девиантное поведение:
+			Независимо от того, указан ключ СopyOnly или нет, таргет GenerateAzurePack 
+			работает также как при сборке эмулятора - генерит Pack, НО  файлы для эмулятора копируют в ServiceOutputDirectory.
+			возможно мы что-то не так делаем или это бага SDK 1.6 -->
+
+		<!-- Сгенерить артефакты для дальнейшего деплоя-->
+		<CallTarget Targets="GenerateAzurePack" Condition="$(IsGenerateAzurePack)" />
+
+	</Target>
+
+	<Target Name="GenerateAzurePack" DependsOnTargets="GenerateAzureProductionPack;GenerateAzureTestPack" />
+
+	
+	<Target Name="GenerateAzureProductionPack" >
+		<!--Генерирует все артефакты для паблиша в azure-->
+		<Message Text="%0D%0A====GenerateAzureProductionPack" />
+
+		<!-- Переопределим свойства которые надо по-другому паковать для ажура - другой ServiceDefinition файл -->
+		<PropertyGroup>
+			<AbbyyTargetProfile>Production</AbbyyTargetProfile>
+			<abyAzureServiceDefinitionFile>ServiceDefinition.$(AbbyyTargetProfile).csdef</abyAzureServiceDefinitionFile>
+			<abyAzureServiceDefinition>$(AbbyySourceFilesPath)\Abbyy.Conversion.AzureDeploy\$(abyAzureServiceDefinitionFile)</abyAzureServiceDefinition>
+		</PropertyGroup>
+
+		<!--Надо подменить Web.config и App.config перед сборкой-->
+	
+		<ItemGroup>
+			<WebConfigs Include="$(AbbyySourceFilesPath)\**\Web.config" />
+			<WebConfigTransformed Include="@(WebConfigs)" Condition="Exists('%(RootDir)\%(Directory)\Web.$(AbbyyTargetProfile).config')">
+				<ReqConfig>%(RootDir)%(Directory)Web.$(AbbyyTargetProfile).config</ReqConfig>
+			</WebConfigTransformed>
+
+			<WebConfigs Include="$(AbbyySourceFilesPath)\**\App.config" />
+			<WebConfigTransformed Include="@(WebConfigs)" Condition="Exists('%(RootDir)\%(Directory)\App.$(AbbyyTargetProfile).config')">
+				<ReqConfig>%(RootDir)%(Directory)App.$(AbbyyTargetProfile).config</ReqConfig>
+			</WebConfigTransformed>
+		</ItemGroup>
+
+		<Message Text="%0D%0A========Hijack-Config %(WebConfigTransformed.ReqConfig) to %(WebConfigTransformed.Identity)====" />
+
+		<Move SourceFiles="%(WebConfigTransformed.Identity)" DestinationFiles="%(WebConfigTransformed.Identity).$(AbbyyTargetProfile).tmp" />
+		<Copy SourceFiles="%(WebConfigTransformed.ReqConfig)" DestinationFiles="%(WebConfigTransformed.Identity)" />
+
+		<Message Text="%0D%0A======== Execute CorePublish for Azure CloudPack. TargetProfile $(AbbyyTargetProfile)" />
+
+	<!-- Хак для повторной сборки web проектов, потому что упаковка ажура мсбилдом происходит по совершенно дебильным правилам - он берет файлы из физической структуры, но не пересобирает проекты-->
+		<MSBuild Projects="%(WebPublishProject.ProjectName)" Targets="Clean;Build;"
+			Properties="
+			MvcBuildViews=true;
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			DebugSymbols=true;
+			" />
+
+		<!--CorePublish Пакует весь ажур в 1 файл для развертывания в облаке-->
+		<MSBuild Projects="$(AzurePackageProjectFileName)" Targets="Clean;CorePublish"
+			Properties="
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			PublishDir=$(AzureCloudPackFolder)\$(AbbyyTargetProfile)\;
+			ServiceOutputDirectory=$(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\;
+			ServiceDefinitionFile=$(abyAzureServiceDefinition);
+			" />
+			<!--OutDir= $(AbbyyBuildOutputPath)\;
+			OutputPath= $(AbbyyBuildOutputPath)\;-->
+
+		<!--Скопируем все cscfg файлы, которые получились в результате билда, в каталог с ролью и в каталог с паком, пригодятся-->
+		<ItemGroup>
+			<AllServiceConfig Remove="*.*" />
+			<AllServiceConfig Include="$(AzurePackageProjectFolder)*.cscfg" Exclude="$(AzurePackageProjectFolder)*.Transformation.*" />
+		</ItemGroup>
+
+		<Message Text="%0D%0A======== Copy ALL @(AllServiceConfig) to $(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\ and $(AzureCloudPackFolder)\$(AbbyyTargetProfile)\" />
+		<Copy SourceFiles="@(AllServiceConfig)"
+			DestinationFiles="@(AllServiceConfig-> '$(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\%(Filename)%(Extension)')"
+			SkipUnchangedFiles="False" />
+
+		<Copy SourceFiles="@(AllServiceConfig)"
+			DestinationFiles="@(AllServiceConfig-> '$(AzureCloudPackFolder)\$(AbbyyTargetProfile)\%(Filename)%(Extension)')"
+			SkipUnchangedFiles="False" />
+	</Target>
+
+	<Target Name="GenerateAzureTestPack" >
+
+		<!--Генерирует все артефакты для паблиша в azure-->
+		<Message Text="%0D%0A====GenerateAzureTestPack" />
+
+		<!-- А теперь упакуем для тестеров AzureTest-->
+		<!-- Переопределим свойства которые надо по-другому паковать для ажура - другой ServiceDefinition файл -->
+		<PropertyGroup>
+			<AbbyyTargetProfile>AzureTest</AbbyyTargetProfile>
+			<abyAzureServiceDefinitionFile>ServiceDefinition.$(AbbyyTargetProfile).csdef</abyAzureServiceDefinitionFile>
+			<abyAzureServiceDefinition>$(AbbyySourceFilesPath)\Abbyy.Conversion.AzureDeploy\$(abyAzureServiceDefinitionFile)</abyAzureServiceDefinition>
+		</PropertyGroup>
+
+		<!--Надо подменить Web.config и App.config перед сборкой-->
+		<!--<Message Text="%0D%0A========Echo @(WebConfigsTest) to @(WebConfigTestTransformed)====" />-->
+
+		<ItemGroup>
+			<WebConfigsTest Include="$(AbbyySourceFilesPath)\**\Web.config" />
+			<WebConfigTestTransformed Include="@(WebConfigsTest)" Condition="Exists('%(RootDir)\%(Directory)\Web.$(AbbyyTargetProfile).config')">
+				<ReqConfig>%(RootDir)%(Directory)Web.$(AbbyyTargetProfile).config</ReqConfig>
+			</WebConfigTestTransformed>
+
+			<WebConfigsTest Include="$(AbbyySourceFilesPath)\**\App.config" />
+			<WebConfigTestTransformed Include="@(WebConfigsTest)" Condition="Exists('%(RootDir)\%(Directory)\App.$(AbbyyTargetProfile).config')">
+				<ReqConfig>%(RootDir)%(Directory)App.$(AbbyyTargetProfile).config</ReqConfig>
+			</WebConfigTestTransformed>
+
+		</ItemGroup>
+
+
+		<Message Text="%0D%0A========Echo2 @(WebConfigsTest) to @(WebConfigTestTransformed)====" />
+
+		<Message Text="%0D%0A========Hijack-Config %(WebConfigTestTransformed.ReqConfig) to %(WebConfigTestTransformed.Identity)====" />
+
+		<Move SourceFiles="%(WebConfigTestTransformed.Identity)" DestinationFiles="%(WebConfigTestTransformed.Identity).$(AbbyyTargetProfile).tmp" />
+		<Copy SourceFiles="%(WebConfigTestTransformed.ReqConfig)" DestinationFiles="%(WebConfigTestTransformed.Identity)" />
+
+
+		<Message Text="%0D%0A======== Execute CorePublish for Azure CloudPack. TargetProfile $(AbbyyTargetProfile)" />
+
+	<!-- Хак для повторной сборки web проектов, потому что упаковка ажура мсбилдом происходит по совершенно дебильным правилам - он берет файлы из физической структуры, но не пересобирает проекты-->
+		<MSBuild Projects="%(WebPublishProject.ProjectName)" Targets="Clean;Build;"
+			Properties="
+			MvcBuildViews=true;
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			DebugSymbols=true;
+			" />
+
+		<!-- CorePublish Пакует весь ажур в 1 файл для развертывания в облаке-->
+		<MSBuild Projects="$(AzurePackageProjectFileName)" Targets="Clean;CorePublish"
+			Properties="
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			PublishDir=$(AzureCloudPackFolder)\$(AbbyyTargetProfile)\;
+			ServiceOutputDirectory=$(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\;
+			ServiceDefinitionFile=$(abyAzureServiceDefinition);
+			" />
+			<!--OutDir= $(AbbyyBuildOutputPath)\;
+			OutputPath= $(AbbyyBuildOutputPath)\;-->
+
+		<!-- Скопируем все cscfg файлы, которые получились в результате билда, в каталог с ролью и в каталог с паком, пригодятся -->
+		<ItemGroup>
+			<AllServiceConfig Remove="*.*" />
+			<AllServiceConfig Include="$(AzurePackageProjectFolder)*.cscfg" Exclude="$(AzurePackageProjectFolder)*.Transformation.*" />
+		</ItemGroup>
+
+		<Message Text="%0D%0A======== Copy ALL @(AllServiceConfig) to $(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\ and $(AzureCloudPackFolder)\$(AbbyyTargetProfile)\" />
+		<Copy SourceFiles="@(AllServiceConfig)"
+			DestinationFiles="@(AllServiceConfig-> '$(AzureCloudFilesFolderFullPath)\$(AbbyyTargetProfile)\%(Filename)%(Extension)')"
+			SkipUnchangedFiles="False" />
+
+		<Copy SourceFiles="@(AllServiceConfig)"
+			DestinationFiles="@(AllServiceConfig-> '$(AzureCloudPackFolder)\$(AbbyyTargetProfile)\%(Filename)%(Extension)')"
+			SkipUnchangedFiles="False" />
+
+	</Target>
+
+	
+	<!-- Post Build Processing-->
+
+	<Target Name="PostBuildProcessing">
+
+		<!-- Отдеплоить базу данных на SQL сервера-->
+		<CallTarget Targets="DeployDatabase" Condition="$(IsDeployDatabase)"/>
+
+		<!-- Опубликовать стандартные сайты\сервисы-->
+		<CallTarget Targets="DeployStandardResults" Condition="$(IsPublishStandardEnabled)" />
+		<!-- Опубликовать символы для отладки-->
+		<CallTarget Targets="DeployStandardSymbols" Condition="$(IsPublishStandardEnabled)" />
+
+		<!-- Запустить тесты -->
+		<CallTarget Targets="MSTest" Condition="$(IsRunTests)"/>
+
+	</Target>
+	
+	<Target Name="DeployDatabase">
+		<!--Деплой базы данных-->
+		<Message Text="%0D%0A==== DeployDatabase" />
+
+		<!--PropertyGroup>
+			<DeployDatabaseConnectionString>Data Source=$(DeployDatabaseServer)$(Semicolon)Integrated Security=True$(Semicolon)Pooling=False</DeployDatabaseConnectionString>
+		</PropertyGroup>
+		<ItemGroup>
+			<DeployArgs Include="$(AbbyySourceFilesPath)\$(DeployDatabaseProjectName)\$(DeployDatabaseProjectName).dbproj" />
+			<DeployArgs Include="/target:Build$(Semicolon)Deploy" />
+			<DeployArgs Include="/p:Configuration=$(AbbyyBuildConfiguration)" />
+			<DeployArgs Include="/p:OutputPath=$(AbbyyBaseOutput)\$(DeployDatabaseProjectName)\" />
+			<DeployArgs Include="/p:TargetDatabase=$(DeployDatabaseName)" />
+			<DeployArgs Include="/p:TargetConnectionString=&quot;$(DeployDatabaseConnectionString)&quot;" />
+
+			<DbProjectToBuild Include="$(AbbyySourceFilesPath)\$(DeployDatabaseProjectName)\$(DeployDatabaseProjectName).sqlproj">
+				<AdditionalProperties>Configuration=$(AbbyyBuildConfiguration)</AdditionalProperties>
+				<AdditionalProperties>OutputPath=$(AbbyyBaseOutput)\$(DeployDatabaseProjectName)\</AdditionalProperties>
+				<AdditionalProperties>TargetDatabase=$(DeployDatabaseName)</AdditionalProperties>
+				<AdditionalProperties>TargetConnectionString="Data Source=$(DeployDatabaseServer);Integrated Security=True;Pooling=False"</AdditionalProperties>
+			</DbProjectToBuild>
+			<MSBuild Projects="%(DbProjectToBuild.Identity)" Targets="Build;Publish" />		
+		</ItemGroup>
+		<Exec IgnoreExitCode="true" Command="&quot;$(MSBuild)\MSBuild.exe&quot; @(DeployArgs ,' ')" /-->
+
+		<ItemGroup>
+			<SqlProjectToBuild Include="$(AbbyySourceFilesPath)\$(DeployDatabaseProjectName)\$(DeployDatabaseProjectName).sqlproj" />
+		</ItemGroup>		
+	
+		<MSBuild Projects="%(SqlProjectToBuild.Identity)" Targets="Build;Publish" Properties="SqlPublishProfilePath=$(AbbyySourceFilesPath)\$(DeployDatabaseProjectName)\$(DeployDatabaseProfile)" />
+		
+		<Message Text="%0D%0A==== DeployDatabase Complete" />
+	</Target>
+
+	<Target Name="DeployStandardResults" DependsOnTargets="PerformStandardBuild">
+		<Message Text="%0D%0A==== DeployStandardResults" />
+
+		<!-- Копирование Веб-сайтов -->
+		<Message Text="%0D%0A==== Deploy Web @(WebPublishProject) to $(DeployRootPath) ===%0D%0A" />
+
+		<ItemGroup>
+			<BuiltWebSites Include="$(StandardBuildPublishPath)\%(WebPublishProject.PublishSubFolder)\**\*.*" >
+				<PublishSubFolder>%(WebPublishProject.PublishSubFolder)</PublishSubFolder>
+			</BuiltWebSites>
+		</ItemGroup>
+
+		<!-- Перезапустим IIS чтобы можно было удалить-->
+		<Exec Command="iisreset $(DeployServer) /restart" ContinueOnError="true" />
+		<!-- Удалим текущие сайты-->
+		<RemoveDir Condition="'%(WebPublishProject.PublishSubFolder)' != '' and %(WebPublishProject.PublishSubFolder) != '\'" 
+			Directories="$(DeployRootPath)\%(WebPublishProject.PublishSubFolder)" />
+		
+		<Copy SkipUnchangedFiles="False"
+				SourceFiles="@(BuiltWebSites)"
+				DestinationFiles="$(DeployRootPath)\%(BuiltWebSites.PublishSubFolder)\%(RecursiveDir)%(FileName)%(Extension)"
+				 />
+
+		<!-- Перезапустим IIS чтобы подхватил новый контент-->
+		<Exec Command="iisreset $(DeployServer) /restart" ContinueOnError="true"/>
+
+
+		<!-- Копирование Консольного сервиса -->
+		<Message Text="%0D%0A==== Deploy Worker @(WorkerProject) to $(DeployRootPath) ===%0D%0A" />
+
+		<ItemGroup>
+			<BuiltApps Include="$(StandardBuildPublishPath)\%(WorkerProject.PublishSubFolder)\**\*.*" >
+				<PublishSubFolder>%(WorkerProject.PublishSubFolder)</PublishSubFolder>
+			</BuiltApps>
+		</ItemGroup>
+
+		<!-- Остановим сервис  AzureAbbyyConversion-->
+		<Exec Command="sc.exe $(DeployServer) stop &quot;$(DeployAzureServiceName)&quot;" IgnoreExitCode="true" ContinueOnError="false"/>
+		<Exec Command="sc.exe $(DeployServer) stop &quot;$(DeploySchedulerInvokerServiceName)&quot;" IgnoreExitCode="true" ContinueOnError="false"/>
+		<Sleep Seconds="30" />
+
+		<!-- Удалим текущие аппы-->
+		<RemoveDir Condition="'%(WorkerProject.PublishSubFolder)' != '' and %(WorkerProject.PublishSubFolder) != '\'"
+			Directories="$(DeployRootPath)\%(WorkerProject.PublishSubFolder)" ContinueOnError="true" />
+
+		<Copy SkipUnchangedFiles="False"
+				SourceFiles="@(BuiltApps)"
+				DestinationFiles="$(DeployRootPath)\%(BuiltApps.PublishSubFolder)\%(RecursiveDir)%(FileName)%(Extension)"
+				 />
+
+		<!-- Запустим сервис  AzureAbbyyConversion-->
+		<Exec Command="sc.exe $(DeployServer) start &quot;$(DeployAzureServiceName)&quot;" IgnoreExitCode="true" ContinueOnError="true"/>
+		<Exec Command="sc.exe $(DeployServer) start &quot;$(DeploySchedulerInvokerServiceName)&quot;" IgnoreExitCode="true" ContinueOnError="true"/>
+	</Target>
+
+	<Target Name="DeployStandardSymbols" DependsOnTargets="PrepareServices;PrepareWebSites">
+		<Message Text="%0D%0A==== DeployStandardSymbols" />
+
+		<ItemGroup>
+			<PdbWebSites Include="$(StandardBuildPublishPath)\%(WebPublishProject.PublishSubFolder)\**\*.pdb" >
+				<PublishSubFolder>%(WebPublishProject.PublishSubFolder)</PublishSubFolder>
+			</PdbWebSites>
+		</ItemGroup>
+
+		<!-- Удалим текущие PDB-->
+		<RemoveDir Condition="'%(WebPublishProject.PublishSubFolder)' != '' and %(WebPublishProject.PublishSubFolder) != '\'"
+			Directories="$(DeploySymbolsPath)\%(WebPublishProject.PublishSubFolder)" />
+
+		<Message Text="%0D%0A==== WebSites: $(DeploySymbolsPath)" />
+		<Message Text="%0D%0A==== WebPublishProject: %(WebPublishProject.PublishSubFolder)" />
+
+		<!-- Скопируем новые-->
+		<Copy SkipUnchangedFiles="False"
+				SourceFiles="@(PdbWebSites)"
+				DestinationFolder="$(DeploySymbolsPath)\%(PdbWebSites.PublishSubFolder)\"
+				 />
+
+
+		<!-- Теперь символы для сервисов-->
+		<ItemGroup>
+			<PdbApps Include="$(StandardBuildPublishPath)\%(WorkerProject.PublishSubFolder)\**\*.pdb" >
+				<PublishSubFolder>%(WorkerProject.PublishSubFolder)</PublishSubFolder>
+			</PdbApps>
+		</ItemGroup>
+
+		<RemoveDir Condition="'%(WorkerProject.PublishSubFolder)' != '' and %(WorkerProject.PublishSubFolder) != '\'"
+			Directories="$(DeploySymbolsPath)\%(WorkerProject.PublishSubFolder)" />
+
+		<Copy SkipUnchangedFiles="False"
+				SourceFiles="@(PdbApps)"
+				DestinationFolder="$(DeploySymbolsPath)\%(PdbApps.PublishSubFolder)\"
+				 />
+
+	</Target>
+	
+	<Target Name="MSTest">
+		<Message Text="%0D%0A==== MSTest" />
+
+
+		<Message Text="%0D%0A==== Build TestProject" />
+		<MSBuild Projects="$(AbbyySourceFilesPath)\$(TestProjectName)\$(TestProjectName).csproj" Targets="Build"
+			Properties="
+			Configuration=$(AbbyyBuildConfiguration);
+			Platform=$(Platform);
+			TargetProfile=$(AbbyyTargetProfile);
+			DebugSymbols=true;
+			OutDir=$(AbbyyBaseOutput)\$(TestProjectName)\;
+			OutputPath= $(AbbyyBaseOutput)\$(TestProjectName)\;
+			" />
+		
+		<PropertyGroup>
+			<TestContainerFile>$(AbbyyBaseOutput)\$(TestProjectName)\$(TestProjectName).dll</TestContainerFile>
+			<TestSettingsFile>$(AbbyySourceFilesPath)\DefaultTest.testsettings</TestSettingsFile>
+			<TestResultsFile>$(AbbyyBaseOutput)\$(TestProjectName)\ConversionTest.trx</TestResultsFile>
+		</PropertyGroup>
+		
+		<!--Зaпуск тестов -->
+		<ItemGroup>
+			<ExecArgs Include="/testcontainer:$(TestContainerFile)" />
+			<ExecArgs Include="/runconfig:$(TestSettingsFile)" />
+			<ExecArgs Include="/resultsfile:$(TestResultsFile)" />
+		</ItemGroup>
+
+		<Message Text="%0D%0A==== Execute TestProject" />
+		<Exec IgnoreExitCode="true" Command="&quot;$(MSTest_10_0)&quot; @(ExecArgs,' ')" />
+
+		<Message Text="##teamcity[importData type='mstest' path='$(TestResultsFile)']"/>
+	</Target>
+
+</Project>

@@ -1,0 +1,121 @@
+<?xml version="1.0" ?>
+<project name="Abbyy.AgreementsBase" default="full" xmlns="http://nant.sf.net/release/0.91/nant.xsd">
+	<!-- Settings -->
+
+	<fail if="${not property::exists('profile.name')}" message="Profile name is required" />
+
+	<property name="profile.path" value="profile.${profile.name}.build" />
+	<include buildfile="${profile.path}" />
+
+	
+	<property name="nant.settings.currentframework" value="net-4.0" />
+	<property name="ef-connection-string" value="metadata=res://Abbyy.AgreementsBase.Models/AgreementsBaseModel.csdl|res://Abbyy.AgreementsBase.Models/AgreementsBaseModel.ssdl|res://Abbyy.AgreementsBase.Models/AgreementsBaseModel.msl;provider=System.Data.SqlClient;provider connection string=&quot;${connection-string}&quot;" />
+
+	<property name="dist.dir" value="..\build-tmp" />
+
+	<property name="web.dir" value="..\Abbyy.AgreementBase.WebUI" />
+	<property name="migrations.dir" value="..\Abbyy.AgreementsBase.Migrations\bin\Release" />
+	
+	<!-- Tasks -->
+	<target name="compile" unless="${target::has-executed('compile')}">
+		<msbuild project="..\ABBYY.AgreementsBase.sln">
+			<property name="Configuration" value="Release" />
+			<property name="Platform" value="Any CPU" />
+			<property name="DefineConstants" value="ENABLE_TRACKING" if="${property::exists('enable-tracking') and (enable-tracking == 'true')}" />
+		</msbuild>
+	</target>
+
+	<target name="dist" depends="compile" unless="${target::has-executed('dist')}" >
+
+		<echo message="Delete temporary directories" />
+		<delete dir="${dist.dir}" if="${directory::exists(dist.dir)}"/>
+
+		<echo message="Create temporary directories" />
+		<mkdir dir="${dist.dir}" />
+
+		<echo message="Prepare application" />
+		<echo message="souece dir: ${web.dir}" />
+		<echo message="target dir: ${dist.dir}" />
+
+		<copy todir="${dist.dir}">
+			<fileset basedir="${web.dir}">
+				<include name="**\*"/>
+				<exclude name="**\*.cs" />
+				<exclude name="**\*.scc"/>
+				<exclude name="**\*.pdb" />
+				<exclude name="**\*.csproj" />
+				<exclude name="**\*.vspscc" />
+				<exclude name="**\*.log" />
+				<exclude name="**\*.Cache" />
+				<exclude name="**\*.csproj.user" />
+			</fileset>
+		</copy>
+
+		<delete dir="${path::combine(dist.dir, 'aspnet_client') }" if="${directory::exists(path::combine(dist.dir, 'aspnet_client'))}"/>
+		<delete dir="${path::combine(dist.dir, 'Controllers') }" if="${directory::exists(path::combine(dist.dir, 'Controllers'))}"/>
+		<delete dir="${path::combine(dist.dir, 'Core') }" if="${directory::exists(path::combine(dist.dir, 'Core'))}"/>
+		<delete dir="${path::combine(dist.dir, 'ModelBinders') }" if="${directory::exists(path::combine(dist.dir, 'ModelBinders'))}"/>
+		<delete dir="${path::combine(dist.dir, 'Models') }" if="${directory::exists(path::combine(dist.dir, 'Models'))}"/>
+		<delete dir="${path::combine(dist.dir, 'obj') }" if="${directory::exists(path::combine(dist.dir, 'obj'))}"/>
+		<delete dir="${path::combine(dist.dir, 'Properties') }" if="${directory::exists(path::combine(dist.dir, 'Properties'))}"/>
+		<delete dir="${path::combine(dist.dir, 'log') }" if="${directory::exists(path::combine(dist.dir, 'log'))}"/>
+		
+	</target>
+
+	<!-- загрузка настроек по умолчанию -->
+	<loadtasks assembly="ECM7.NantContrib.dll" />
+
+	<target name="configure" depends="dist" unless="${target::has-executed('configure')}" >
+
+		<!-- настраиваем приложение -->
+		<echo message="Configure web site"  />
+		<configure file="${path::combine(dist.dir, 'web.config')}" preserveWhitespace="true" >
+			<rules>
+				<rule xpath="/configuration/system.web/compilation/@debug" value="false" />
+				<rule xpath="/configuration/appSettings/add[@key = 'testEmail']/@value" value="${appsettings.testemail}" />
+				<rule xpath="/configuration/appSettings/add[@key = 'bccEmail']/@value" value="${appsettings.bccemail}" />
+				<rule xpath="/configuration/appSettings/add[@key = 'applicationHost']/@value" value="${appsettings.host}" />
+				<rule xpath="/configuration/connectionStrings/add[@name = 'AgreementsBaseEntities']/@connectionString" value="${ef-connection-string}" />
+			</rules>
+		</configure>
+
+	</target>
+
+	<target name="migrate" depends="compile" unless="${target::has-executed('migrate')}">
+
+		<loadtasks assembly="${path::combine(migrations.dir, 'ECM7.Migrator.NAnt.dll')}" />
+
+		<migrate
+		  provider="SqlServer"
+		  connection-string="${connection-string}"
+		  assembly-file="${path::combine(migrations.dir, 'Abbyy.AgreementsBase.Migrations.dll')}"
+		  to="-1" />
+	</target>
+
+	<target name="transfer" if="${property::exists('result.dir')}" unless="${target::has-executed('transfer')}" >
+
+		<echo message="Create destination directories" />
+
+		<app-offline path="${result.dir}" text="Сайт будет доступен через несколько минут" />
+
+		<copy todir="${result.dir}">
+			<fileset basedir="${dist.dir}">
+				<include name="**\*"/>
+			</fileset>
+		</copy>
+
+		<delete if="${file::exists(path::combine(result.dir, 'App_Offline.htm'))}" file="${path::combine(result.dir, 'App_Offline.htm')}" />
+	
+	</target>
+
+	<target name="full">
+		<call target="compile" />
+		<call target="dist" />
+		<call target="configure" />
+		<call target="migrate" />
+		<call target="transfer" />
+	</target>
+
+
+</project>
+

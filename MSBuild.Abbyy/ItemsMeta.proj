@@ -1,0 +1,78 @@
+<Project ToolsVersion="4.0" DefaultTargets="AbyTarget" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	
+	<ItemGroup>
+		<DemoFile Include="*.proj" Exclude="$(MSBuildProjectFile)"/>
+		
+		<StringList Include="First" />
+		<StringList Include="Second">
+			<SomeMeta>2-MetaData</SomeMeta>
+		</StringList>
+		<StringList Include="Third" />
+
+		<StringList Include="Fourth" >
+			<SomeMeta>4-MetaData</SomeMeta>
+			<OtherMeta>4-OtherData</OtherMeta>
+		</StringList>
+
+	</ItemGroup>
+
+	<Target Name="AbyTarget">
+
+		<Message Text="
+=====DemoFile:"/>
+
+		<Message Condition="$(DemoFile)!=''"
+			Text="
+%(DemoFile.Identity)
+FileMeta:
+	FullPath: %(FullPath)
+	RootDir: %(RootDir)
+	Filename: %(Filename)
+	Extension: %(Extension)
+	RelativeDir: %(RelativeDir)
+	Directory: %(Directory)
+	RecursiveDir: %(RecursiveDir)
+	ModifiedTime: %(ModifiedTime)
+	CreatedTime: %(CreatedTime)
+	AccessedTime: %(AccessedTime)
+"/>
+	
+		<ItemGroup>
+			<DirContent Include=".\Solution.Meta\**\*.*" Exclude=".\**\*.gif"/>
+			
+
+			<DirContentToRemove Include=".\**\*.metaproj.*" />
+			
+			<DirContent Remove="@(DirContentToRemove)" />
+
+		</ItemGroup>
+
+		<Message Text="=====DirContent:"/>
+		<Message Condition="$(DirContent)!=''"
+			Text="%(DirContent.Identity)"/>
+
+
+
+
+
+		<Message Text="=====StringList:"/>
+		<Message Condition="$(StringList)!=''"
+			Text="ItemFunctions: @(StringList->Metadata('SomeMeta'),'-::-')"/>
+
+		
+		<Message Condition="$(StringList)!=''"
+			Text="
+%(StringList.Identity)
+CustomMeta:
+	SomeMeta: %(StringList.SomeMeta)
+"/>
+
+		<!-- 
+		Это Batching
+		<Message Condition="$(StringList)!=''" Text="Bug %(StringList.SomeMeta)"/>
+		<Message Condition="$(StringList)!=''" Text="WTF Where is Third?"/>
+		-->
+
+	</Target>
+
+</Project>

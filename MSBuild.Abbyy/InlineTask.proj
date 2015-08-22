@@ -1,0 +1,26 @@
+<Project ToolsVersion="4.0" DefaultTargets="AbyTarget" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="InlineTask.msbuild" />
+
+	<Target Name="AbyTarget">
+		
+		
+		<AbbyyGenerateAssemblyVersion>
+			<Output TaskParameter="AssemblyVersionString" PropertyName="BuildVersion"  />
+		</AbbyyGenerateAssemblyVersion>
+		
+		<Message Text="BuildVersion: $(BuildVersion)"/>
+		
+		<AbbyySomeFibbonaci FibbonaciSeqLength="10">
+			<Output TaskParameter="Result" ItemName="Fibbies" />
+		</AbbyySomeFibbonaci>
+
+		<Message Text="===================="/>
+		<Message Text="Some Fibbonaci Numbers:"/>
+		<Message Text="
+%(Fibbies.Identity)  
+	prevNumber: %(Fibbies.prevNumber)"/>
+
+	</Target>
+
+</Project>
