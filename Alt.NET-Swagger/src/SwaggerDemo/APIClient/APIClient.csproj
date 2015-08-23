@@ -51,8 +51,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AltNetClient\AltNETDemo.cs" />
+    <Compile Include="AltNetClient\AltNETDemoExtensions.cs" />
+    <Compile Include="AltNetClient\Company.cs" />
+    <Compile Include="AltNetClient\CompanyExtensions.cs" />
+    <Compile Include="AltNetClient\IAltNETDemo.cs" />
+    <Compile Include="AltNetClient\ICompany.cs" />
+    <Compile Include="AltNetClient\IProject.cs" />
+    <Compile Include="AltNetClient\IUser.cs" />
+    <Compile Include="AltNetClient\Models\CompanyDTO.cs" />
+    <Compile Include="AltNetClient\Models\ProjectDTO.cs" />
+    <Compile Include="AltNetClient\Models\UserDTO.cs" />
+    <Compile Include="AltNetClient\Project.cs" />
+    <Compile Include="AltNetClient\ProjectExtensions.cs" />
+    <Compile Include="AltNetClient\User.cs" />
+    <Compile Include="AltNetClient\UserExtensions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UtilExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -20,7 +20,7 @@ namespace BackendAPI.Host
 				Console.WriteLine("Website started!");
 				while ( true )
 				{
-					Task.Delay(10000, CancellationToken.None);
+					Task.Delay(10000, CancellationToken.None).Wait();
 				}
 			}
 
