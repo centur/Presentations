@@ -1,6 +1,4 @@
 ﻿using System;
-using APIClient.AltNetClient;
-using APIClient.AltNetClient.Models;
 using Microsoft.Rest.TransientFaultHandling;
 
 namespace APIClient
@@ -9,17 +7,19 @@ namespace APIClient
 	{
 		private static void Main()
 		{
+			Console.WriteLine("Press any key...");
 			Console.ReadKey();
 
 			var endpointUrl = "http://swagger.localtest.me";
 
 
 			//SimpleClientInvocation(new Uri(endpointUrl));
+			//Console.WriteLine("Press any key...");
 			//Console.ReadKey();
 
-			ClientInvocationWithRetryStrategy(new Uri(endpointUrl));
+			//ClientInvocationWithRetryStrategy(new Uri(endpointUrl));
 
-
+			Console.WriteLine("Press any key to quit...");
 			Console.ReadKey();
 		}
 
@@ -27,24 +27,24 @@ namespace APIClient
 		{
 			Console.WriteLine("Calling : SimpleClientInvocation");
 			Console.WriteLine();
-			using ( var altCli = new APIClient.AltNetClient.AltNETDemo(targetUrl) )
-			{
-				var createdUser = altCli.User.CreateUserAsync(new UserDTO { Id = 25, Company = "SkyNet", Name = "Arnold Sch-war-ugh-err", Tag = "T-800", PreferredLanguage = "Asm-2020", })
-					.Result;
+			//using ( var altCli = new AltNETDemo(targetUrl) )
+			//{
+			//	var createdUser = altCli.User.CreateUserAsync(new UserDTO { Id = 25, Company = "SkyNet", Name = "Arnold Sch-war-ugh-err", Tag = "T-800", PreferredLanguage = "Asm-2020", })
+			//		.Result;
 
-				var freshMan = altCli.User.GetUserById(25);
-				freshMan.ToJson().ToConsole();
+			//	var freshMan = altCli.User.GetUserById(25);
+			//	freshMan.ToJson().ToConsole();
 
-				var terminated = altCli.User.DeletUserById(43);
+			//	var terminated = altCli.User.DeletUserById(43);
 
-				var usersData = altCli.User.ListAllUsersAsync(4)
-					.Result
-					.ToJson();
+			//	var usersData = altCli.User.ListAllUsersAsync(4)
+			//		.Result
+			//		.ToJson();
 
-				Console.ForegroundColor = ConsoleColor.Yellow;
-				Console.WriteLine(usersData);
-				Console.ResetColor();
-			}
+			//	Console.ForegroundColor = ConsoleColor.Yellow;
+			//	Console.WriteLine(usersData);
+			//	Console.ResetColor();
+			//}
 		}
 
 		private static void ClientInvocationWithRetryStrategy(Uri targetUrl)
@@ -61,17 +61,14 @@ namespace APIClient
 				firstFastRetry: true));
 
 
-			using ( var myClient = new AltNETDemo(targetUrl) )
-			{
-				myClient.SetRetryPolicy(retryPolicy);
+			//using ( var myClient = new AltNETDemo(targetUrl) )
+			//{
+			//	myClient.SetRetryPolicy(retryPolicy);
 
-				var companyData = myClient.Company.GetListAsync(4).Result;
+			//	var companyData = myClient.Company.GetListAsync(4).Result;
 
-				companyData.ToJson().ToConsole();
-			}
+			//	companyData.ToJson().ToConsole();
+			//}
 		}
-
-
-
 	}
 }

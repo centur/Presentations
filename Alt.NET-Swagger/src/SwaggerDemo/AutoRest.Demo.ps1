@@ -11,11 +11,6 @@ $apiTag = "AltNetClient"
 #Url with Swagger Definition
 $swaggerDefinitionUrl = "http://swagger.localtest.me/swagger/docs/v1"
 
-# Sample data for PetStore demo
-#$swaggerDefinitionUrl = "http://petstore.swagger.io/v2/swagger.json"
-#$apiTag = "PetStore"
-
-
 #File to save Swagger definition to
 $outputJsonFileName = "$currentPath\$apiTag.swagger.json"
 
