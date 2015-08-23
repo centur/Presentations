@@ -33,13 +33,13 @@ namespace BackendAPI.Host
 			config.Formatters.XmlFormatter.SupportedMediaTypes.Clear();
 
 
-			//config.EnableSwagger(c => {
-			//	c.SingleApiVersion("v1", "Alt.NET Demo ")
-			//		.Description("Swagger API Demo for ALT.NET Melbourne")
-			//		.Contact(cc => cc.Url("http://swagger.io"));
-			//	//c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Docs.xml");
-			//})
-			//.EnableSwaggerUi(c => { var assembly = typeof(UserController).Assembly;});
+			config.EnableSwagger(c => {
+				c.SingleApiVersion("v1", "Alt.NET Demo ")
+					.Description("Swagger API Demo for ALT.NET Melbourne")
+					.Contact(cc => cc.Url("http://swagger.io"));
+				c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Docs.xml");
+			})
+			.EnableSwaggerUi(c => { var assembly = typeof(UserController).Assembly; });
 
 			return config;
 		}
