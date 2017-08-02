@@ -1,0 +1,96 @@
+Orleans DDD Melbourne Workshop
+==
+
+1st Hour: Intro & getting started
+    [Orleans in 20 mins]
+        * Why Orleans?
+            - Scaling is hard
+            - Failures are inevitable
+            - Concurrency is hard, especially in a distributed system.
+            - Non-blocking performance is critical
+            - Orelans to the rescue (mention extreme computing group / MSR / Halo)
+        * Conceptual Model
+            - Virtual Actors
+                - Actor is a unit of state + behavior, just like an object in OOP. Eg: User actor
+                - Of course, you can have stateless actors, too.
+            - Addressed by Id + Type
+            - Lifecycle is managed by distributed runtime
+            - Analogous to Virtual Memory (paged in & out automatically)
+            - Simple interfaces and methods
+                -> Turned into messages
+                -> Async/Await all the things
+            - Truly location transparent - you can store references to actors and use them months later. Eg: like cell phone system
+        * Implementation - what it looks like
+            - Farm analogue
+            - Clients (eg, web server) call into Silos which hold 'grains'
+            - Self healing cluster
+            - get references to actors and start calling their methods
+            - Under the hood, it's like ConcurrentDictionary.GetOrAdd - if the actor doesn't exist (either because it's never been called before or it was on a silo which died) then it's new'd up and receives your call, otherwise your message is just routed to the existing instance.
+            - See it in action (demo)
+
+    Demo 1 (HelloWorld): Distributed ToUpper
+        - Project structure: Good separation of concerns: Interfaces + Implementations + Clients + Silos
+        - Console client, console silo
+        - (COLORED CONSOLE) Console.ReadLine() -> Send to actor -> Print result
+        + Students type out grain interfaces, implementation, + client loop
+
+    Storage
+        - Simple storage Model
+        - Pluggable
+        - Don't need to use it, but quick way to get started
+
+    Observers - simple pub/sub
+        - Clients can receive notifications
+        - Pattern: resubscribe in a loop on a timer
+
+    Demo 2 Chat (RoomGrain, Storage, Observers)
+        - RoomGrain: 
+            - Join(IChatObserver, string name) -> send 15 latest msgs to client
+            - Leave(IChatObserver, string name)
+            - Broadcast(string fromName, string message)
+            - GetUsers()
+            - Stores current users.
+        /join <room>
+        /leave <room>
+        msg room
+        + Students
+        + Bonus: /nuke <room> (Clear state async)
+
+2nd Hour: Unleasing power
+    Recap
+    
+    Reminders + Timers
+
+    Demo 3 (Reminders): EggTimerGrain
+        - /egg [room] [seconds: int] [message: string]
+            -> Sends a message to room after x seconds
+        - /kick [user]
+            -> Kick user after 5 mins
+    
+    Streams
+        - Virtual Streams
+        - Implicit/Explicit Subs
+        - Providers:
+            - Simple Messaging Service (SMSProvider)
+            - Azure Queues
+            - EventHub
+
+    Demo 4: Character Histogram
+        - When rm receives msg, pushes each letter to a per-letter stream
+        - Implicit listener receives each letter pushed, sums it, and saves it
+        - Push sum to IStatsGrain
+        /stats: prints character histogram
+
+    Where to go from here:
+        - Hosting:
+            - Console / Windows Service
+            - Azure Cloud Services
+            - Service Fabric
+            - Future: AWS
+        - Pluggable Telemetry Providers / loggers
+        - Dependency Injection
+        - .NET Core "coming soon"
+    
+    Join Us!
+        - Gitter
+        - Help Wanted!
